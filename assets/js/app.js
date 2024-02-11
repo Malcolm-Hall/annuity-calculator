@@ -14,6 +14,18 @@ console.log('Script is OK! ༼ つ ◕_◕ ༽つ');
  * @property {?HTMLInputElement} [$monthlyIncome]
  * @property {?HTMLInputElement} [$annualIncrease]
  */
+/**
+ * @callback CalcFunc
+ * @param {?number} principal
+ * @param {?number} annuityTerm
+ * @param {?number} interestRate
+ * @param {number} compound
+ * @param {?number} monthlyIncome
+ * @param {?number} annualIncrease
+ */
+
+const CRITICAL_ERROR_MESSAGE = "Something went wrong with the calculation. Please refresh the page and try again.";
+
 
 /** @param {Event} event */
 function toggleRelatedInputs(event) {
@@ -58,11 +70,93 @@ function currencyFormat(num, space = '&nbsp') {
     return `R${space}` + num.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')
 }
 
-/** @param {?number} compound */
-function getCompoundFromIndex(compound) {
-    switch (compound) {
-        case null:
-            return null;
+/** @type {CalcFunc} */
+function calculateMonthlyIncome(
+    principal,
+    annuityTerm,
+    interestRate,
+    compound,
+    monthlyIncome,
+    annualIncrease,
+) {
+    if (
+        principal === null ||
+        annuityTerm === null ||
+        interestRate === null ||
+        annualIncrease === null
+    ) {
+        input.error([], CRITICAL_ERROR_MESSAGE);
+        throw new Error("Invalid state");
+    }
+    alert("This calculation type has not been implemented yet");
+}
+
+/** @type {CalcFunc} */
+function calculateAnnuityTerm(
+    principal,
+    annuityTerm,
+    interestRate,
+    compound,
+    monthlyIncome,
+    annualIncrease,
+) {
+    if (
+        principal === null ||
+        interestRate === null ||
+        monthlyIncome === null ||
+        annualIncrease === null
+    ) {
+        input.error([], CRITICAL_ERROR_MESSAGE);
+        throw new Error("Invalid state");
+    }
+    alert("This calculation type has not been implemented yet");
+}
+
+/** @type {CalcFunc} */
+function calculateStartingPrincipal(
+    principal,
+    annuityTerm,
+    interestRate,
+    compound,
+    monthlyIncome,
+    annualIncrease,
+) {
+    if (
+        annuityTerm === null ||
+        interestRate === null ||
+        monthlyIncome === null ||
+        annualIncrease === null
+    ) {
+        input.error([], CRITICAL_ERROR_MESSAGE);
+        throw new Error("Invalid state");
+    }
+    alert("This calculation type has not been implemented yet");
+}
+
+/** @type {CalcFunc} */
+function calculateInterestRate(
+    principal,
+    annuityTerm,
+    interestRate,
+    compound,
+    monthlyIncome,
+    annualIncrease,
+) {
+    if (
+        principal == null ||
+        annuityTerm === null ||
+        monthlyIncome === null ||
+        annualIncrease === null
+    ) {
+        input.error([], CRITICAL_ERROR_MESSAGE);
+        throw new Error("Invalid state");
+    }
+    alert("This calculation type has not been implemented yet");
+}
+
+/** @param {?number} compoundIndex */
+function getCompoundFromIndex(compoundIndex) {
+    switch (compoundIndex) {
         case 0:
             return 12;
         case 1:
@@ -78,7 +172,21 @@ function getCompoundFromIndex(compound) {
         case 6:
             return 365;
         default:
-            throw new Error("Invalid compound index");
+            input.error([], CRITICAL_ERROR_MESSAGE);
+            throw new Error(`Invalid compound index: ${compoundIndex}`);
+    }
+}
+
+/** @param {?number} calcTypeIndex */
+function getCalcFuncFromIndex(calcTypeIndex) {
+    switch (calcTypeIndex) {
+        case 0: return calculateMonthlyIncome;
+        case 1: return calculateAnnuityTerm;
+        case 2: return calculateStartingPrincipal;
+        case 3: return calculateInterestRate;
+        default:
+            input.error([], CRITICAL_ERROR_MESSAGE);
+            throw new Error(`Invalid calculation type index: ${calcTypeIndex}`);
     }
 }
 
@@ -457,7 +565,8 @@ const input = {
 }
 
 const calculateAnnuity = () => {
-    const calcType = $calculationType.selectedIndex;
+    const calcTypeIndex = $calculationType.selectedIndex;
+    const calcFunc = getCalcFuncFromIndex(calcTypeIndex);
     const {
         $startingPrincipal,
         $annuityTerm,
@@ -465,7 +574,7 @@ const calculateAnnuity = () => {
         $compound,
         $monthlyIncome,
         $annualIncrease
-    } = calcInputs[calcType];
+    } = calcInputs[calcTypeIndex];
 
     const principal = input.get($startingPrincipal?.id).val();
     const annuityTerm = input.get($annuityTerm?.id).val();
@@ -475,7 +584,19 @@ const calculateAnnuity = () => {
     const annualIncrease = input.get($annualIncrease?.id).val();
 
     const compound = getCompoundFromIndex(compoundIdx);
-    console.warn("Calculate annuity called: ", principal, annuityTerm, interestRate, compound, monthlyIncome, annualIncrease);
+
+    if (!input.valid()) return;
+
+    console.warn("Calculate called: ", principal, annuityTerm, interestRate, compound, monthlyIncome, annualIncrease);
+
+    calcFunc(
+        principal,
+        annuityTerm,
+        interestRate,
+        compound,
+        monthlyIncome,
+        annualIncrease
+    );
 }
 
 /**
