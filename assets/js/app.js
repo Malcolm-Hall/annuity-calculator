@@ -206,11 +206,11 @@ const $calculateBtn = /** @type {HTMLButtonElement} */ (document.getElementById(
 
 const calcInputs = /** @type {Record<number, CalculatorInputs>} */ ({
     0: {
-        $startingPrincipal: document.getElementById('starting-principal'),
-        $annuityTerm: document.getElementById('annuity-term'),
-        $interestRate: document.getElementById('interest-rate'),
-        $compound: document.getElementById('compound'),
-        $annualIncrease: document.getElementById('annual-increase'),
+        $startingPrincipal: document.getElementById('starting-principal-0'),
+        $annuityTerm: document.getElementById('annuity-term-0'),
+        $interestRate: document.getElementById('interest-rate-0'),
+        $compound: document.getElementById('compound-0'),
+        $annualIncrease: document.getElementById('annual-increase-0'),
     },
     1: {
         $startingPrincipal: document.getElementById('starting-principal-1'),
@@ -225,6 +225,13 @@ const calcInputs = /** @type {Record<number, CalculatorInputs>} */ ({
         $compound: document.getElementById('compound-2'),
         $monthlyIncome: document.getElementById('monthly-income-2'),
         $annualIncrease: document.getElementById('annual-increase-2'),
+    },
+    3: {
+        $startingPrincipal: document.getElementById('starting-principal-3'),
+        $annuityTerm: document.getElementById('annuity-term-3'),
+        $compound: document.getElementById('compound-3'),
+        $monthlyIncome: document.getElementById('monthly-income-3'),
+        $annualIncrease: document.getElementById('annual-increase-3'),
     }
 });
 
