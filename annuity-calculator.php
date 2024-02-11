@@ -21,6 +21,7 @@ function display_mh_annuity_calculator(){
         'assets/css/input.css',
         'assets/css/result.css',
         'assets/js/app.js',
+        'assets/js/dialog-table.js',
     );
 
     $html_content = file_get_contents($plugin_dir_path . 'index.html');
