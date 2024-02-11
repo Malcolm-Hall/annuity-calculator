@@ -58,6 +58,30 @@ function currencyFormat(num, space = '&nbsp') {
     return `R${space}` + num.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')
 }
 
+/** @param {?number} compound */
+function getCompoundFromIndex(compound) {
+    switch (compound) {
+        case null:
+            return null;
+        case 0:
+            return 12;
+        case 1:
+            return 2;
+        case 2:
+            return 4;
+        case 3:
+            return 24;
+        case 4:
+            return 26;
+        case 5:
+            return 52;
+        case 6:
+            return 365;
+        default:
+            throw new Error("Invalid compound index");
+    }
+}
+
 const customDataLabels = {
     id: 'customDataLabel',
     afterDatasetDraw(chart, args, pluginOptions) {
@@ -196,12 +220,12 @@ const barChartData = {
     ],
 };
 
+const $errorBox = /** @type {HTMLElement} */ (document.getElementById('error-box'));
+const $errorList = /** @type {HTMLElement} */ (document.getElementById('error-list'));
+
 const $chartDonut = /** @type {HTMLCanvasElement} */ (document.getElementById('chart-donut'));
-
 const $chartLoan = /** @type {HTMLCanvasElement} */ (document.getElementById('chart-loan'));
-
 const $calculationType = /** @type {HTMLSelectElement} */ (document.getElementById('calc-type'));
-
 const $calculateBtn = /** @type {HTMLButtonElement} */ (document.getElementById('calculate-btn'));
 
 const calcInputs = /** @type {Record<number, CalculatorInputs>} */ ({
@@ -235,8 +259,223 @@ const calcInputs = /** @type {Record<number, CalculatorInputs>} */ ({
     }
 });
 
+const input = {
+    value: /** @type {*} */ (null),
+    elementId: "",
+    shown: false,
+    processed: false,
+    silent: false,
+    reset: function () {
+        this.shown = false;
+        $errorBox.classList.remove('calculator-result--error-active');
+        document.querySelectorAll('.input-field--error')?.forEach(el => el.classList.remove('input-field--error'))
+        document.querySelectorAll('.calculator-result:not(.calculator-result--error)').forEach(el => el.classList.remove('calculator-result--hidden'))
+    },
+    error: function (inputId, message = `Incorrect value for "${inputId}"`, last = false) {
+        if (this.silent) return;
+        if (this.processed) this.reset();
+        if (!Array.isArray(inputId)) inputId = [inputId];
+        for (const inputIdItem of inputId) {
+            const wrapperElement = /** @type {?HTMLElement} */ (document.getElementById(inputIdItem)?.parentNode);
+            wrapperElement?.classList.add('input-field--error');
+        }
+        if (!this.shown) {
+            this.processed = false;
+            this.shown = true;
+            $errorList.innerHTML = '';
+            $errorBox.classList.add('calculator-result--error-active');
+            document.querySelectorAll('.calculator-result:not(.calculator-result--error)').forEach(el => el.classList.add('calculator-result--hidden'))
+        }
+        const element = document.createElement('p');
+        element.classList.add('calculator-error__item');
+        element.innerHTML = message;
+        $errorList.append(element);
+        if (last) this.processed = true;
+    },
+    valid: function () {
+        if (!this.shown || this.processed) this.reset();
+        this.processed = true;
+        this.silent = false;
+        return !this.shown;
+    },
+    get: function (elementId) {
+        this.elementId = elementId;
+        let element = /** @type {HTMLInputElement} */ (document.getElementById(elementId));
+        this.silent = false;
+        if (element == null) {
+            this.value = null;
+        } else {
+            this.value = element.value;
+        }
+        return this;
+    },
+    index: function () {
+        const element = /** @type {?HTMLSelectElement} */ (document.getElementById(this.elementId));
+        this.value = element?.selectedIndex;
+        return this;
+    },
+    checked: function (elementId) {
+        const element = /** @type {?HTMLInputElement} */ (document.getElementById(this.elementId))
+        this.value = element?.checked;
+        return this;
+    },
+    split: function (separator) {
+        this.value = this.value.split(separator);
+        return this;
+    },
+    replace: function (pattern, replacement) {
+        this.value = this.value.replace(pattern, replacement);
+        return this;
+    },
+    default: function (value) {
+        if (!this.value) this.value = value;
+        return this;
+    },
+    optional: function (value) {
+        if (!this.value) this.silent = true;
+        return this;
+    },
+    gt: function (compare = 0, errorText = `The ${this.elementId} must be greater than ${compare}.`) {
+        if (isNaN(compare)) {
+            const element = /** @type {?HTMLInputElement} */ (document.getElementById(this.elementId));
+            compare = Number(element?.value);
+        }
+        if (this.value === '' || isNaN(Number(this.value)))
+            this.error(this.elementId, `The ${this.elementId} must be a number.`);
+        else if (Number(this.value) <= compare) this.error(this.elementId, errorText);
+        return this;
+    },
+    gte: function (compare = 0, errorText = `The ${this.elementId} must be greater than or equal to ${compare}.`) {
+        if (isNaN(compare)) {
+            const element = /** @type {?HTMLInputElement} */ (document.getElementById(this.elementId));
+            compare = Number(element?.value);
+        }
+        if (this.value === '' || isNaN(Number(this.value)))
+            this.error(this.elementId, `The ${this.elementId} must be a number.`);
+        else if (Number(this.value) < compare) this.error(this.elementId, errorText);
+        return this;
+    },
+    lt: function (compare = 0, errorText = `The ${this.elementId} must be less than ${compare}.`) {
+        if (isNaN(compare)) {
+            const element = /** @type {?HTMLInputElement} */ (document.getElementById(this.elementId));
+            compare = Number(element?.value);
+        }
+        if (this.value === '' || isNaN(Number(this.value)))
+            this.error(this.elementId, `The ${this.elementId} must be a number.`);
+        else if (Number(this.value) >= compare) this.error(this.elementId, errorText);
+        return this;
+    },
+    lte: function (compare = 0, errorText = `The ${this.elementId} must be less than or equal to ${compare}.`) {
+        if (isNaN(compare)) {
+            const element = /** @type {?HTMLInputElement} */ (document.getElementById(this.elementId));
+            compare = Number(element?.value);
+        }
+        if (this.value === '' || isNaN(Number(this.value)))
+            this.error(this.elementId, `The ${this.elementId} must be a number.`);
+        else if (Number(this.value) > compare) this.error(this.elementId, errorText);
+        return this;
+    },
+    integer: function (errorText = `The ${this.elementId
+        } must be integer number (-3, -2, -1, 0, 1, 2, 3, ...).`) {
+        if (!this.value.match(/^-?(0|[1-9]\d*)$/)) this.error(this.elementId, errorText);
+        return this;
+    },
+    _naturalRegexp: /^([1-9]\d*)$/,
+    natural: function (errorText = `The ${this.elementId} must be a natural number(1, 2, 3, ...).`) {
+        if (!this.value.match(this._naturalRegexp)) this.error(this.elementId, errorText);
+        return this;
+    },
+    natural_numbers: function (errorText = `The ${this.elementId} must be a set of natural numbers(1, 2, 3, ...).`) {
+        this.split(/[ ,]+/);
+        if (!this.value.every(value => value.match(this._naturalRegexp))) this.error(this.elementId, errorText);
+        return this;
+    },
+    _mixedRegexp: /^(0|-?[1-9]\d*|-?[1-9]\d*\/[1-9]\d*|-?[1-9]\d*\s[1-9]\d*\/[1-9]\d*)$/,
+    mixed: function (errorText = `The ${this.elementId} must be an integer / fraction / mixed number(1, 2 / 3, 4 5 / 6, ...).`) {
+        if (!this.value.match(this._mixedRegexp)) this.error(this.elementId, errorText);
+        return this;
+    },
+    mixed_numbers: function (errorText = `The ${this.elementId} must be a set of integer / fraction / mixed numbers(1, 2 / 3, 4 5 / 6, ...).`) {
+        this.split(/,\s*/);
+        if (!this.value.every(value => value.match(this._mixedRegexp))) this.error(this.elementId, errorText);
+        return this;
+    },
+    number: function (errorText = `The "${this.elementId}" must be a number.`) {
+        if (this.value === '' || isNaN(Number(this.value))) this.error(this.elementId, errorText);
+        return this;
+    },
+    probability: function (errorText = `The "${this.elementId}" must be a number between 0 and 1.`) {
+        if (this.value === '' || isNaN(Number(this.value)) || Number(this.value) < 0 || Number(this.value) > 1)
+            this.error(this.elementId, errorText);
+        return this;
+    },
+    percentage: function (errorText = `The "${this.elementId}" must be a number between 0 and 100.`) {
+        if (this.value === '' || isNaN(Number(this.value)) || Number(this.value) < 0 || Number(this.value) > 100)
+            this.error(this.elementId, errorText);
+        return this;
+    },
+    numbers: function (errorText = `The ${this.elementId} must be a set of numbers.`) {
+        if (this.value.filter(value => isNaN(Number(value))).length) this.error(this.elementId, errorText);
+        return this;
+    },
+    whole: function (errorText = `The ${this.elementId} must be a whole number.`) {
+        if (!this.value.match(/^(0|[1-9]\d*)$/)) this.error(this.elementId, errorText);
+        return this;
+    },
+    positive: function (errorText = `The ${this.elementId} must be greater than 0.`) {
+        this.gt(0, errorText);
+        return this;
+    },
+    nonZero: function (errorText = `The ${this.elementId} must be non - zero.`) {
+        if (this.value === '' || isNaN(Number(this.value)))
+            this.error(this.elementId, `The ${this.elementId} must be a number.`);
+        else
+            if (Number(this.value) == 0) this.error(this.elementId, errorText);
+        return this;
+    },
+    nonNegative: function (errorText = `The ${this.elementId} must be greater than or equal to 0.`) {
+        this.gte(0, errorText);
+        return this;
+    },
+    negative: function (errorText = `The ${this.elementId} must be less than 0.`) {
+        this.lt(0, errorText);
+        return this;
+    },
+    bool: function () {
+        return !!this.value;
+    },
+    val: function () {
+        if (this.value === '' || this.value === null) return null;
+        return Number(this.value);
+    },
+    vals: function () {
+        return this.value.map(value => Number(value));
+    },
+    raw: function () {
+        return this.value;
+    }
+}
+
 const calculateAnnuity = () => {
-    console.warn("Calculate annuity called");
+    const calcType = $calculationType.selectedIndex;
+    const {
+        $startingPrincipal,
+        $annuityTerm,
+        $interestRate,
+        $compound,
+        $monthlyIncome,
+        $annualIncrease
+    } = calcInputs[calcType];
+
+    const principal = input.get($startingPrincipal?.id).val();
+    const annuityTerm = input.get($annuityTerm?.id).val();
+    const interestRate = input.get($interestRate?.id).val();
+    const compoundIdx = input.get($compound?.id).index().val();
+    const monthlyIncome = input.get($monthlyIncome?.id).val();
+    const annualIncrease = input.get($annualIncrease?.id).val();
+
+    const compound = getCompoundFromIndex(compoundIdx);
+    console.warn("Calculate annuity called: ", principal, annuityTerm, interestRate, compound, monthlyIncome, annualIncrease);
 }
 
 /**
@@ -245,7 +484,7 @@ const calculateAnnuity = () => {
  */
 const runApp = (pieChart, barChart) => {
     $calculationType.addEventListener('change', calculateAnnuity);
-    $calculateBtn?.addEventListener('click', calculateAnnuity);
+    $calculateBtn.addEventListener('click', calculateAnnuity);
 }
 
 $calculationType.addEventListener('change', toggleRelatedInputs);
