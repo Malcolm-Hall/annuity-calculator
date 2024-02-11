@@ -97,6 +97,12 @@ function calculateResult(
     const interest = interestRate / 100 / compound;
     const ratePayB = Math.pow(1 + interest, cc) - 1;
 
+    const firstInterestPayment = principal * ratePayB;
+    if (firstInterestPayment > initialMonthlyIncome) {
+        input.error([], `This annuity earns more in interest than it pays out in withdrawals. It will continue on indefinitely. Please increase the periodic withdrawal to a number above ${currencyFormat(firstInterestPayment)}.`);
+        throw new Error("Invalid state");
+    }
+
     const results = [];
     let balance = principal;
     let monthlyIncome = initialMonthlyIncome;
@@ -127,7 +133,7 @@ function calculateResult(
             monthlyIncome *= 1 + annualIncrease / 100;
         }
 
-        if (i >= 100 * 12) {
+        if (i >= 1000 * 12) {
             input.error([], CALCULATION_ERROR_MESSAGE);
             break;
         }
@@ -685,6 +691,7 @@ const calculateAnnuity = () => {
         $annualIncrease
     } = calcInputs[calcTypeIndex];
 
+    input.reset();
     const principal = input.get($startingPrincipal?.id).val();
     const annuityTerm = input.get($annuityTerm?.id).val();
     const interestRate = input.get($interestRate?.id).val();
