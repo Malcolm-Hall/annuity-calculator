@@ -15,6 +15,12 @@ console.log('Script is OK! ༼ つ ◕_◕ ༽つ');
  * @property {?HTMLInputElement} [$annualIncrease]
  */
 /**
+ * @typedef {object} CalculatorOutputs
+ * @property {?HTMLElement} [$main]
+ * @property {?HTMLElement} [$smallA]
+ * @property {?HTMLElement} [$smallB]
+ */
+/**
  * @callback CalcFunc
  * @param {?number} principal
  * @param {?number} annuityTerm
@@ -25,6 +31,7 @@ console.log('Script is OK! ༼ つ ◕_◕ ༽つ');
  */
 
 const CRITICAL_ERROR_MESSAGE = "Something went wrong with the calculation. Please refresh the page and try again.";
+const CALCULATION_ERROR_MESSAGE = "Something went wrong with the calculation. Please check the input values are reasonable";
 
 
 /** @param {Event} event */
@@ -120,6 +127,10 @@ function calculateResult(
             monthlyIncome *= 1 + annualIncrease / 100;
         }
 
+        if (i >= 100 * 12) {
+            input.error([], CALCULATION_ERROR_MESSAGE);
+            break;
+        }
         i++;
     }
 
@@ -179,6 +190,12 @@ function calculateAnnuityTerm(
 
     const totalWithdrawn = results[results.length - 1].totalWithdrawn;
     const totalInterest = results[results.length - 1].totalInterest;
+
+    return {
+        main: `Annuity Term: ${actualTerm.toFixed(1)} years`,
+        smallA: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}, End Balance: ${currencyFormat(results[results.length - 1].endBalance)}`,
+        smallB: `Total Interest: ${currencyFormat(totalInterest)}`,
+    }
 }
 
 /** @type {CalcFunc} */
@@ -436,6 +453,29 @@ const calcInputs = /** @type {Record<number, CalculatorInputs>} */ ({
     }
 });
 
+const calcOutputs = /** @type {Record<number, CalculatorOutputs>} */ ({
+    0: {
+        $main: document.getElementById('result-main-0'),
+        $smallA: document.getElementById('result-small-A-0'),
+        $smallB: document.getElementById('result-small-B-0'),
+    },
+    1: {
+        $main: document.getElementById('result-main-1'),
+        $smallA: document.getElementById('result-small-A-1'),
+        $smallB: document.getElementById('result-small-B-1'),
+    },
+    2: {
+        $main: document.getElementById('result-main-2'),
+        $smallA: document.getElementById('result-small-A-2'),
+        $smallB: document.getElementById('result-small-B-2'),
+    },
+    3: {
+        $main: document.getElementById('result-main-3'),
+        $smallA: document.getElementById('result-small-A-3'),
+        $smallB: document.getElementById('result-small-B-3'),
+    },
+})
+
 const input = {
     value: /** @type {*} */ (null),
     elementId: "",
@@ -658,7 +698,11 @@ const calculateAnnuity = () => {
 
     console.warn("Calculate called: ", principal, annuityTerm, interestRate, compound, monthlyIncome, annualIncrease);
 
-    calcFunc(
+    const {
+        main,
+        smallA,
+        smallB
+    } = calcFunc(
         principal,
         annuityTerm,
         interestRate,
@@ -666,6 +710,16 @@ const calculateAnnuity = () => {
         monthlyIncome,
         annualIncrease
     );
+
+    const {
+        $main,
+        $smallA,
+        $smallB
+    } = calcOutputs[calcTypeIndex];
+
+    $main && ($main.innerHTML = main);
+    $smallA && ($smallA.innerHTML = smallA);
+    $smallB && ($smallB.innerHTML = smallB);
 }
 
 /**
