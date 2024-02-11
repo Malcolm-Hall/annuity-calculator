@@ -217,6 +217,12 @@ const $calculateBtn = document.getElementById('calculate-btn');
 const $startingPrincipal = document.getElementById('starting-principal');
 /** @type {HTMLInputElement} */
 const $annuityTerm = document.getElementById('annuity-term');
+/** @type {HTMLInputElement} */
+const $interestRate = document.getElementById('interest-rate');
+/** @type {HTMLInputElement} */
+const $annualIncrease = document.getElementById('annual-increase');
+/** @type {HTMLSelectElement} */
+const $compound = document.getElementById('compound');
 
 const calculateAnnuity = () => {
     console.warn("Calculate annuity called");
@@ -232,8 +238,14 @@ const runApp = (pieChart, barChart) => {
 }
 
 $calculationType.addEventListener('change', toggleRelatedInputs);
-$startingPrincipal.addEventListener('input', forceNumeric);
-$annuityTerm.addEventListener('input', forceNumeric);
+[
+    $startingPrincipal,
+    $annuityTerm,
+    $interestRate,
+    $annualIncrease,
+].forEach(input => input.addEventListener('input', forceNumeric));
+
+
 
 import("./lib/chartjs/chart.js").then(({ Chart, registerables }) => {
     Chart.register(...registerables);
