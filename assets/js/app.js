@@ -70,6 +70,65 @@ function currencyFormat(num, space = '&nbsp') {
     return `R${space}` + num.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')
 }
 
+/**
+ * @param {number} principal
+ * @param {?number} annuityTerm
+ * @param {number} interestRate
+ * @param {number} compound
+ * @param {number} initialMonthlyIncome
+ * @param {number} annualIncrease
+ */
+function calculateResult(
+    principal,
+    annuityTerm,
+    interestRate,
+    compound,
+    initialMonthlyIncome,
+    annualIncrease,
+) {
+    const cc = compound / 12;
+    const interest = interestRate / 100 / compound;
+    const ratePayB = Math.pow(1 + interest, cc) - 1;
+
+    const results = [];
+    let balance = principal;
+    let monthlyIncome = initialMonthlyIncome;
+    let totalWithdrawn = 0;
+    let totalInterest = 0;
+
+    let i = 1;
+    while (balance >= 0.01) {
+        const startBalance = balance;
+
+        balance -= Math.min(balance, monthlyIncome);
+        totalWithdrawn += monthlyIncome;
+
+        const interestPayment = balance * ratePayB;
+        totalInterest += interestPayment;
+        balance += interestPayment;
+
+        results.push({
+            startBalance,
+            endBalance: balance,
+            interestPayment,
+            totalWithdrawn,
+            totalInterest,
+            monthlyIncome
+        });
+
+        if (i % 12 === 0) {
+            monthlyIncome *= 1 + annualIncrease / 100;
+        }
+
+        i++;
+    }
+
+    const actualTerm = i / 12;
+    console.warn(`Expect term of ${annuityTerm}, actual was ${actualTerm} (${i} months)`);
+
+    return { results, actualTerm };
+}
+
 /** @type {CalcFunc} */
 function calculateMonthlyIncome(
     principal,
@@ -109,7 +168,17 @@ function calculateAnnuityTerm(
         input.error([], CRITICAL_ERROR_MESSAGE);
         throw new Error("Invalid state");
     }
-    alert("This calculation type has not been implemented yet");
+    const { results, actualTerm } = calculateResult(
+        principal,
+        annuityTerm,
+        interestRate,
+        compound,
+        monthlyIncome,
+        annualIncrease,
+    );
+
+    const totalWithdrawn = results[results.length - 1].totalWithdrawn;
+    const totalInterest = results[results.length - 1].totalInterest;
 }
 
 /** @type {CalcFunc} */
