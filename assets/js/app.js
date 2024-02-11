@@ -1,22 +1,23 @@
+// @ts-check
 'use strict'
 
 console.log('Script is OK! ༼ つ ◕_◕ ༽つ');
 
 // Types
 /** @typedef {import('./lib/chartjs/chart.js').Chart} Chart */
-
-// DIALOG TABLE
-if (document.querySelector('.result-table__dialog')) {
-    import('./dialog-table.js').then(e => {
-        console.log("Dialog table loaded (づ ◕‿◕ )づ")
-    }).catch(e => {
-        console.log("Sorry, dialog tables not loaded (ಥ﹏ಥ)", e)
-    })
-}
+/**
+ * @typedef {object} CalculatorInputs
+ * @property {?HTMLInputElement} [$startingPrincipal]
+ * @property {?HTMLInputElement} [$annuityTerm]
+ * @property {?HTMLInputElement} [$interestRate]
+ * @property {?HTMLSelectElement} [$compound]
+ * @property {?HTMLInputElement} [$monthlyIncome]
+ * @property {?HTMLInputElement} [$annualIncrease]
+ */
 
 /** @param {Event} event */
 function toggleRelatedInputs(event) {
-    const element = event.target;
+    const element = /** @type {HTMLSelectElement} */ (event.target);
     const id = element.id;
     const index = element.selectedIndex;
 
@@ -31,7 +32,9 @@ function toggleRelatedInputs(event) {
 
 /** @param {Event} event */
 function forceNumeric(event) {
-    event.target.value = event.target.value
+    const element = /** @type {?HTMLInputElement} */ (event.target);
+    if (!element) return;
+    element.value = element.value
         .replace(/[^0-9.]/g, '')
         .replace(/(\..*?)\..*/g, '$1');
 }
@@ -41,13 +44,9 @@ function forceNumeric(event) {
  * @param {number} decimals
  * @returns {number}
  */
-function roundTo(num, decimals = 5) {
-    if (typeof num !== 'number' || !isFinite(num)) return num;
-    if (num.toString().includes('e')) {
-        const splitted = num.toString().split('e');
-        return roundTo(+splitted[0], decimals) + `e${splitted[1]}`;
-    };
-    return +(Math.round(num + `e+${decimals}`) + `e-${decimals}`);
+function roundTo(num, decimals = 0) {
+    const exp = Math.pow(10, decimals);
+    return Math.round((num + Number.EPSILON) * exp) / exp;
 }
 
 /**
@@ -57,14 +56,6 @@ function roundTo(num, decimals = 5) {
  */
 function currencyFormat(num, space = '&nbsp') {
     return `R${space}` + num.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')
-}
-
-/**
- * @param {number} num
- * @returns {number}
- */
-function roundDown2Dp(num) {
-    return Math.floor(num * 100) / 100;
 }
 
 const customDataLabels = {
@@ -111,7 +102,7 @@ const tooltip = {
         // Hide if no tooltip
         const tooltipModel = context.tooltip;
         if (tooltipModel.opacity === 0) {
-            tooltipEl.style.opacity = 0;
+            tooltipEl.style.opacity = '0';
             return;
         }
 
@@ -144,14 +135,16 @@ const tooltip = {
             });
             innerHtml += '</tbody>';
 
-            let tableRoot = tooltipEl.querySelector('table');
-            tableRoot.innerHTML = innerHtml;
+            const tableRoot = tooltipEl.querySelector('table');
+            if (tableRoot) {
+                tableRoot.innerHTML = innerHtml;
+            }
         }
 
         const position = context.chart.canvas.getBoundingClientRect();
 
         // Display, position, and set styles for font
-        tooltipEl.style.opacity = 1;
+        tooltipEl.style.opacity = '1';
         tooltipEl.style.position = 'absolute';
         tooltipEl.style.left = position.left + window.scrollX + tooltipModel.caretX - tooltipEl.clientWidth / 2 + 'px';
         tooltipEl.style.top = position.top + window.scrollY + tooltipModel.caretY - tooltipEl.clientHeight / 2 + 'px';
@@ -203,38 +196,37 @@ const barChartData = {
     ],
 };
 
-/** @type {HTMLCanvasElement} */
-const $chartDonut = document.getElementById('chart-donut');
-/** @type {HTMLCanvasElement} */
-const $chartLoan = document.getElementById('chart-loan');
-/** @type {HTMLSelectElement} */
-const $calculationType = document.getElementById('calc-type');
-/** @type {HTMLButtonElement} */
-const $calculateBtn = document.getElementById('calculate-btn');
+const $chartDonut = /** @type {HTMLCanvasElement} */ (document.getElementById('chart-donut'));
 
-// Calculation Inputs 0
-/** @type {HTMLInputElement} */
-const $startingPrincipal = document.getElementById('starting-principal');
-/** @type {HTMLInputElement} */
-const $annuityTerm = document.getElementById('annuity-term');
-/** @type {HTMLInputElement} */
-const $interestRate = document.getElementById('interest-rate');
-/** @type {HTMLSelectElement} */
-const $compound = document.getElementById('compound');
-/** @type {HTMLInputElement} */
-const $annualIncrease = document.getElementById('annual-increase');
+const $chartLoan = /** @type {HTMLCanvasElement} */ (document.getElementById('chart-loan'));
 
-// Calculation Inputs 1
-/** @type {HTMLInputElement} */
-const $startingPrincipal1 = document.getElementById('starting-principal-1');
-/** @type {HTMLInputElement} */
-const $interestRate1 = document.getElementById('interest-rate-1');
-/** @type {HTMLSelectElement} */
-const $compound1 = document.getElementById('compound-1');
-/** @type {HTMLInputElement} */
-const $monthlyIncome1 = document.getElementById('monthly-income-1');
-/** @type {HTMLInputElement} */
-const $annualIncrease1 = document.getElementById('annual-increase-1');
+const $calculationType = /** @type {HTMLSelectElement} */ (document.getElementById('calc-type'));
+
+const $calculateBtn = /** @type {HTMLButtonElement} */ (document.getElementById('calculate-btn'));
+
+const calcInputs = /** @type {Record<number, CalculatorInputs>} */ ({
+    0: {
+        $startingPrincipal: document.getElementById('starting-principal'),
+        $annuityTerm: document.getElementById('annuity-term'),
+        $interestRate: document.getElementById('interest-rate'),
+        $compound: document.getElementById('compound'),
+        $annualIncrease: document.getElementById('annual-increase'),
+    },
+    1: {
+        $startingPrincipal: document.getElementById('starting-principal-1'),
+        $interestRate: document.getElementById('interest-rate-1'),
+        $compound: document.getElementById('compound-1'),
+        $monthlyIncome: document.getElementById('monthly-income-1'),
+        $annualIncrease: document.getElementById('annual-increase-1'),
+    },
+    2: {
+        $annuityTerm: document.getElementById('annuity-term-2'),
+        $interestRate: document.getElementById('interest-rate-2'),
+        $compound: document.getElementById('compound-2'),
+        $monthlyIncome: document.getElementById('monthly-income-2'),
+        $annualIncrease: document.getElementById('annual-increase-2'),
+    }
+});
 
 const calculateAnnuity = () => {
     console.warn("Calculate annuity called");
@@ -246,24 +238,26 @@ const calculateAnnuity = () => {
  */
 const runApp = (pieChart, barChart) => {
     $calculationType.addEventListener('change', calculateAnnuity);
-    $calculateBtn.addEventListener('click', calculateAnnuity);
+    $calculateBtn?.addEventListener('click', calculateAnnuity);
 }
 
 $calculationType.addEventListener('change', toggleRelatedInputs);
-[
-    // 0
+
+Object.values(calcInputs).forEach(({
     $startingPrincipal,
     $annuityTerm,
     $interestRate,
+    $monthlyIncome,
     $annualIncrease,
-    // 1
-    $startingPrincipal1,
-    $interestRate1,
-    $monthlyIncome1,
-    $annualIncrease1,
-].forEach(input => input.addEventListener('input', forceNumeric));
-
-
+}) => {
+    [
+        $startingPrincipal,
+        $annuityTerm,
+        $interestRate,
+        $monthlyIncome,
+        $annualIncrease,
+    ].forEach(input => input?.addEventListener('input', forceNumeric));
+});
 
 import("./lib/chartjs/chart.js").then(({ Chart, registerables }) => {
     Chart.register(...registerables);
