@@ -212,17 +212,29 @@ const $calculationType = document.getElementById('calc-type');
 /** @type {HTMLButtonElement} */
 const $calculateBtn = document.getElementById('calculate-btn');
 
-// 0
+// Calculation Inputs 0
 /** @type {HTMLInputElement} */
 const $startingPrincipal = document.getElementById('starting-principal');
 /** @type {HTMLInputElement} */
 const $annuityTerm = document.getElementById('annuity-term');
 /** @type {HTMLInputElement} */
 const $interestRate = document.getElementById('interest-rate');
-/** @type {HTMLInputElement} */
-const $annualIncrease = document.getElementById('annual-increase');
 /** @type {HTMLSelectElement} */
 const $compound = document.getElementById('compound');
+/** @type {HTMLInputElement} */
+const $annualIncrease = document.getElementById('annual-increase');
+
+// Calculation Inputs 1
+/** @type {HTMLInputElement} */
+const $startingPrincipal1 = document.getElementById('starting-principal-1');
+/** @type {HTMLInputElement} */
+const $interestRate1 = document.getElementById('interest-rate-1');
+/** @type {HTMLSelectElement} */
+const $compound1 = document.getElementById('compound-1');
+/** @type {HTMLInputElement} */
+const $monthlyIncome1 = document.getElementById('monthly-income-1');
+/** @type {HTMLInputElement} */
+const $annualIncrease1 = document.getElementById('annual-increase-1');
 
 const calculateAnnuity = () => {
     console.warn("Calculate annuity called");
@@ -239,10 +251,16 @@ const runApp = (pieChart, barChart) => {
 
 $calculationType.addEventListener('change', toggleRelatedInputs);
 [
+    // 0
     $startingPrincipal,
     $annuityTerm,
     $interestRate,
     $annualIncrease,
+    // 1
+    $startingPrincipal1,
+    $interestRate1,
+    $monthlyIncome1,
+    $annualIncrease1,
 ].forEach(input => input.addEventListener('input', forceNumeric));
 
 
