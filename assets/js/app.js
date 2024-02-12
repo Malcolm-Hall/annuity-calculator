@@ -18,9 +18,8 @@ console.log('Script is OK! ༼ つ ◕_◕ ༽つ');
  * @param {?number} annualIncrease
  */
 
-const CRITICAL_ERROR_MESSAGE = "Something went wrong with the calculation. Please refresh the page and try again.";
-const CALCULATION_ERROR_MESSAGE = "Something went wrong with the calculation. Please check the input values are reasonable";
-
+const CRITICAL_ERROR_MESSAGE = "Please refresh the page and try again.";
+const CALCULATION_FAILED_ERROR_MESSAGE = "Please check the input values are reasonable";
 
 /** @param {Event} event */
 function toggleRelatedInputs(event) {
@@ -87,7 +86,7 @@ function calculateResult(
 
     const firstInterestPayment = principal * ratePayB;
     if (firstInterestPayment > initialMonthlyIncome) {
-        input.error([], `This annuity earns more in interest than it pays out in withdrawals. It will continue on indefinitely. Please increase the periodic withdrawal to a number above ${currencyFormat(firstInterestPayment)}.`);
+        input.error([], `This annuity earns more in interest than it pays out in withdrawals. It will continue on indefinitely. Please increase the monthly withdrawal to a number above ${currencyFormat(firstInterestPayment)}.`, true);
         throw new Error("Invalid state");
     }
 
@@ -101,8 +100,9 @@ function calculateResult(
     while (balance >= 0.01) {
         const startBalance = balance;
 
-        balance -= Math.min(balance, monthlyIncome);
-        totalWithdrawn += monthlyIncome;
+        const withdrawal = Math.min(balance, monthlyIncome)
+        balance -= withdrawal;
+        totalWithdrawn += withdrawal;
 
         const interestPayment = balance * ratePayB;
         totalInterest += interestPayment;
@@ -114,17 +114,13 @@ function calculateResult(
             interestPayment,
             totalWithdrawn,
             totalInterest,
-            monthlyIncome
+            monthlyIncome: withdrawal
         });
 
         if (i % 12 === 0) {
             monthlyIncome *= 1 + annualIncrease / 100;
         }
 
-        if (i >= 1000 * 12) {
-            input.error([], CALCULATION_ERROR_MESSAGE);
-            break;
-        }
         i++;
     }
 
@@ -132,6 +128,50 @@ function calculateResult(
     console.warn(`Expect term of ${annuityTerm}, actual was ${actualTerm} (${i} months)`);
 
     return { results, actualTerm };
+}
+
+const DELTA = 0.0000000001;
+const RETRY_COUNT = 10;
+const DELTA_COUNT = 18;
+
+/**
+ * 
+ * @param {number} initialIncrement 
+ * @param {(v: number) => number} resultGetter 
+ * @returns 
+ */
+function findParameter(
+    initialIncrement,
+    resultGetter
+) {
+    let delta = DELTA;
+    for (let d = 0; d < DELTA_COUNT; d++) {
+        let dm = 1 - delta;
+        let dp = 1;
+        for (let r = 0; r <= RETRY_COUNT; r++) {
+            let value = 0.1;
+            let increment = initialIncrement * Math.pow(2, r);
+            for (let i = 0; i < 1000; i++) {
+                const ratio = resultGetter(value);
+                if (ratio < dm) {
+                    value -= increment;
+                    increment = increment / 2;
+                } else if (ratio >= dm && ratio <= dp) {
+                    if (value < 0) {
+                        input.error([], CALCULATION_FAILED_ERROR_MESSAGE, true);
+                        return 0;
+                    }
+                    return value;
+                } else {
+                    value += increment;
+                }
+            }
+        }
+        delta += delta;
+    }
+
+    input.error([], CALCULATION_FAILED_ERROR_MESSAGE, true);
+    return 0;
 }
 
 /** @type {CalcFunc} */
@@ -149,7 +189,7 @@ function calculateMonthlyIncome(
         interestRate === null ||
         annualIncrease === null
     ) {
-        input.error([], CRITICAL_ERROR_MESSAGE);
+        input.error([], CRITICAL_ERROR_MESSAGE, true);
         throw new Error("Invalid state");
     }
     alert("This calculation type has not been implemented yet");
@@ -170,7 +210,7 @@ function calculateAnnuityTerm(
         monthlyIncome === null ||
         annualIncrease === null
     ) {
-        input.error([], CRITICAL_ERROR_MESSAGE);
+        input.error([], CRITICAL_ERROR_MESSAGE, true);
         throw new Error("Invalid state");
     }
     const { results, actualTerm } = calculateResult(
@@ -184,10 +224,11 @@ function calculateAnnuityTerm(
 
     const totalWithdrawn = results[results.length - 1].totalWithdrawn;
     const totalInterest = results[results.length - 1].totalInterest;
+    const endBalance = results[results.length - 1].endBalance;
 
     return {
         main: `Annuity Term: ${actualTerm.toFixed(1)} years`,
-        smallA: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}, End Balance: ${currencyFormat(results[results.length - 1].endBalance)}`,
+        smallA: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}, End Balance: ${currencyFormat(endBalance)}`,
         smallB: `Total Interest: ${currencyFormat(totalInterest)}`,
     }
 }
@@ -207,7 +248,7 @@ function calculateStartingPrincipal(
         monthlyIncome === null ||
         annualIncrease === null
     ) {
-        input.error([], CRITICAL_ERROR_MESSAGE);
+        input.error([], CRITICAL_ERROR_MESSAGE, true);
         throw new Error("Invalid state");
     }
     alert("This calculation type has not been implemented yet");
@@ -228,10 +269,40 @@ function calculateInterestRate(
         monthlyIncome === null ||
         annualIncrease === null
     ) {
-        input.error([], CRITICAL_ERROR_MESSAGE);
+        input.error([], CRITICAL_ERROR_MESSAGE, true);
         throw new Error("Invalid state");
     }
-    alert("This calculation type has not been implemented yet");
+
+    const rate = findParameter(1, (/** @type {number} */ r) => {
+        const { actualTerm } = calculateResult(
+            principal,
+            annuityTerm,
+            r,
+            compound,
+            monthlyIncome,
+            annualIncrease,
+        );
+        return annuityTerm / actualTerm;
+    });
+
+    const { results } = calculateResult(
+        principal,
+        annuityTerm,
+        rate,
+        compound,
+        monthlyIncome,
+        annualIncrease,
+    );
+
+    const totalWithdrawn = results[results.length - 1].totalWithdrawn;
+    const totalInterest = results[results.length - 1].totalInterest;
+    const endBalance = results[results.length - 1].endBalance;
+
+    return {
+        main: `Interest Rate: ${rate.toFixed(3)}% `,
+        smallA: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}, End Balance: ${currencyFormat(endBalance)}`,
+        smallB: `Total Interest: ${currencyFormat(totalInterest)}`,
+    }
 }
 
 /** @param {?number} compoundIndex */
@@ -252,7 +323,7 @@ function getCompoundFromIndex(compoundIndex) {
         case 6:
             return 365;
         default:
-            input.error([], CRITICAL_ERROR_MESSAGE);
+            input.error([], CRITICAL_ERROR_MESSAGE, true);
             throw new Error(`Invalid compound index: ${compoundIndex}`);
     }
 }
@@ -265,7 +336,7 @@ function getCalcFuncFromIndex(calcTypeIndex) {
         case 2: return calculateStartingPrincipal;
         case 3: return calculateInterestRate;
         default:
-            input.error([], CRITICAL_ERROR_MESSAGE);
+            input.error([], CRITICAL_ERROR_MESSAGE, true);
             throw new Error(`Invalid calculation type index: ${calcTypeIndex}`);
     }
 }
