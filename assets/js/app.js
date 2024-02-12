@@ -229,7 +229,6 @@ function calculateMonthlyIncome(
 
     const ratePayB = getInterestPayRate(interestRate, compound);
     const firstInterestPayment = principal * ratePayB;
-    console.warn("FIP:", firstInterestPayment);
 
     const income = findMoneyParameter((i) => {
         const { actualTerm } = calculateResult(
@@ -251,8 +250,6 @@ function calculateMonthlyIncome(
         income,
         annualIncrease,
     );
-
-    console.error(results);
 
     const totalWithdrawn = results[results.length - 1].totalWithdrawn;
     const totalInterest = results[results.length - 1].totalInterest;
@@ -321,7 +318,37 @@ function calculateStartingPrincipal(
         input.error([], CRITICAL_ERROR_MESSAGE, true);
         throw new Error("Invalid state");
     }
-    alert("This calculation type has not been implemented yet");
+
+    const principalRequired = findMoneyParameter((p) => {
+        const { actualTerm } = calculateResult(
+            p,
+            annuityTerm,
+            interestRate,
+            compound,
+            monthlyIncome,
+            annualIncrease,
+        );
+        return annuityTerm / actualTerm;
+    }, monthlyIncome, monthlyIncome);
+
+    const { results } = calculateResult(
+        principalRequired,
+        annuityTerm,
+        interestRate,
+        compound,
+        monthlyIncome,
+        annualIncrease,
+    );
+
+    const totalWithdrawn = results[results.length - 1].totalWithdrawn;
+    const totalInterest = results[results.length - 1].totalInterest;
+    const endBalance = results[results.length - 1].endBalance;
+
+    return {
+        main: `Principal: ${currencyFormat(principalRequired)}`,
+        smallA: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}, End Balance: ${currencyFormat(endBalance)}`,
+        smallB: `Total Interest: ${currencyFormat(totalInterest)}`,
+    }
 }
 
 /** @type {CalcFunc} */
