@@ -16,6 +16,7 @@ console.log('Script is OK! ༼ つ ◕_◕ ༽つ');
  * @param {number} compound
  * @param {?number} monthlyIncome
  * @param {?number} annualIncrease
+ * @returns {{ calculationResults: Record<string, number>[], outputResults: Record<string, string> }}
  */
 
 const CRITICAL_ERROR_MESSAGE = "Please refresh the page and try again.";
@@ -122,7 +123,7 @@ function calculateResult(
             interestPayment,
             totalWithdrawn,
             totalInterest,
-            monthlyIncome: withdrawal
+            withdrawal
         });
 
         if (i % 12 === 0) {
@@ -132,7 +133,7 @@ function calculateResult(
         i++;
     }
 
-    const actualTerm = i / 12;
+    const actualTerm = results.length / 12;
     console.warn(`Expect term of ${annuityTerm}, actual was ${actualTerm} (${i} months)`);
 
     return { results, actualTerm };
@@ -256,9 +257,12 @@ function calculateMonthlyIncome(
     const endBalance = results[results.length - 1].endBalance;
 
     return {
-        main: `Monthly Income: ${currencyFormat(income)}`,
-        smallA: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}, End Balance: ${currencyFormat(endBalance)}`,
-        smallB: `Total Interest: ${currencyFormat(totalInterest)}`,
+        calculationResults: results,
+        outputResults: {
+            main: `Monthly Income: ${currencyFormat(income)}`,
+            smallA: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}, End Balance: ${currencyFormat(endBalance)}`,
+            smallB: `Total Interest: ${currencyFormat(totalInterest)}`,
+        }
     }
 }
 
@@ -294,9 +298,12 @@ function calculateAnnuityTerm(
     const endBalance = results[results.length - 1].endBalance;
 
     return {
-        main: `Annuity Term: ${actualTerm.toFixed(1)} years`,
-        smallA: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}, End Balance: ${currencyFormat(endBalance)}`,
-        smallB: `Total Interest: ${currencyFormat(totalInterest)}`,
+        calculationResults: results,
+        outputResults: {
+            main: `Annuity Term: ${actualTerm.toFixed(1)} years`,
+            smallA: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}, End Balance: ${currencyFormat(endBalance)}`,
+            smallB: `Total Interest: ${currencyFormat(totalInterest)}`,
+        }
     }
 }
 
@@ -345,9 +352,12 @@ function calculateStartingPrincipal(
     const endBalance = results[results.length - 1].endBalance;
 
     return {
-        main: `Principal: ${currencyFormat(principalRequired)}`,
-        smallA: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}, End Balance: ${currencyFormat(endBalance)}`,
-        smallB: `Total Interest: ${currencyFormat(totalInterest)}`,
+        calculationResults: results,
+        outputResults: {
+            main: `Principal: ${currencyFormat(principalRequired)}`,
+            smallA: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}, End Balance: ${currencyFormat(endBalance)}`,
+            smallB: `Total Interest: ${currencyFormat(totalInterest)}`,
+        }
     }
 }
 
@@ -396,9 +406,12 @@ function calculateInterestRate(
     const endBalance = results[results.length - 1].endBalance;
 
     return {
-        main: `Interest Rate: ${rate.toFixed(3)}% `,
-        smallA: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}, End Balance: ${currencyFormat(endBalance)}`,
-        smallB: `Total Interest: ${currencyFormat(totalInterest)}`,
+        calculationResults: results,
+        outputResults: {
+            main: `Interest Rate: ${rate.toFixed(3)}% `,
+            smallA: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}, End Balance: ${currencyFormat(endBalance)}`,
+            smallB: `Total Interest: ${currencyFormat(totalInterest)}`,
+        }
     }
 }
 
@@ -425,7 +438,10 @@ function getCompoundFromIndex(compoundIndex) {
     }
 }
 
-/** @param {?number} calcTypeIndex */
+/** 
+ * @param {?number} calcTypeIndex 
+ * @returns {CalcFunc}
+ */
 function getCalcFuncFromIndex(calcTypeIndex) {
     switch (calcTypeIndex) {
         case 0: return calculateMonthlyIncome;
@@ -578,6 +594,8 @@ const barChartData = {
 
 const $errorBox = /** @type {HTMLElement} */ (document.getElementById('error-box'));
 const $errorList = /** @type {HTMLElement} */ (document.getElementById('error-list'));
+const $annualResultsTable = /** @type {HTMLElement} */ (document.getElementById('annual-results'));
+const $monthlyResultsTable = /** @type {HTMLElement} */ (document.getElementById('monthly-results'));
 
 const $chartDonut = /** @type {HTMLCanvasElement} */ (document.getElementById('chart-donut'));
 const $chartLoan = /** @type {HTMLCanvasElement} */ (document.getElementById('chart-loan'));
@@ -835,6 +853,60 @@ const input = {
     }
 }
 
+/** @param {Record<string, number>[]} results */
+const displayResultsTable = (results) => {
+    let annualResults = [];
+    let annualInterest = 0;
+    let annualWithdrawals = 0;
+    let annualStartBalance = undefined;
+
+    let monthlyResultsHtml = '';
+    results.forEach((item, index) => {
+        monthlyResultsHtml += `<tr>
+            <td class="text-center">${index + 1}</td>
+            <td>${currencyFormat(item.startBalance)}</td>
+            <td>${currencyFormat(item.withdrawal)}</td>
+            <td>${currencyFormat(item.interestPayment)}</td>
+            <td>${currencyFormat(item.endBalance)}</td>
+        </tr>`;
+
+        annualInterest += item.interestPayment;
+        annualWithdrawals += item.withdrawal;
+        if (annualStartBalance === undefined) {
+            annualStartBalance = item.startBalance;
+        }
+
+        if ((index + 1) % 12 === 0 || (index + 1) === results.length) {
+            const year = Math.ceil((index + 1) / 12);
+            const title = `Year #${year} End`;
+            monthlyResultsHtml += `<th class="white text-center" colspan="5">${title}</th>`;
+            annualResults.push({
+                startBalance: annualStartBalance,
+                endBalance: item.endBalance,
+                interestPayment: annualInterest,
+                withdrawal: annualWithdrawals
+            });
+            annualInterest = 0;
+            annualWithdrawals = 0;
+            annualStartBalance = undefined;
+        }
+    });
+
+    let annualResultsHtml = '';
+    annualResults.forEach((r, index) => {
+        annualResultsHtml += `<tr>
+            <td class="text-center">${index + 1}</td>
+            <td>${currencyFormat(r.startBalance)}</td>
+            <td>${currencyFormat(r.withdrawal)}</td>
+            <td>${currencyFormat(r.interestPayment)}</td>
+            <td>${currencyFormat(r.endBalance)}</td>
+        </tr>`;
+    });
+
+    $annualResultsTable.innerHTML = annualResultsHtml;
+    $monthlyResultsTable.innerHTML = monthlyResultsHtml;
+}
+
 const calculateAnnuity = () => {
     const calcTypeIndex = $calculationType.selectedIndex;
     const calcFunc = getCalcFuncFromIndex(calcTypeIndex);
@@ -862,9 +934,12 @@ const calculateAnnuity = () => {
     console.warn("Calculate called: ", principal, annuityTerm, interestRate, compound, monthlyIncome, annualIncrease);
 
     const {
-        main,
-        smallA,
-        smallB
+        outputResults: {
+            main,
+            smallA,
+            smallB
+        },
+        calculationResults
     } = calcFunc(
         principal,
         annuityTerm,
@@ -883,6 +958,8 @@ const calculateAnnuity = () => {
     $main && ($main.innerHTML = main);
     $smallA && ($smallA.innerHTML = smallA);
     $smallB && ($smallB.innerHTML = smallB);
+
+    displayResultsTable(calculationResults);
 }
 
 /**
