@@ -6,19 +6,7 @@ console.log('Script is OK! ༼ つ ◕_◕ ༽つ');
 // Types
 /** @typedef {import('./lib/chartjs/chart.js').Chart} Chart */
 /**
- * @typedef {object} CalculatorInputs
- * @property {?HTMLInputElement} [$startingPrincipal]
- * @property {?HTMLInputElement} [$annuityTerm]
- * @property {?HTMLInputElement} [$interestRate]
- * @property {?HTMLSelectElement} [$compound]
- * @property {?HTMLInputElement} [$monthlyIncome]
- * @property {?HTMLInputElement} [$annualIncrease]
- */
-/**
- * @typedef {object} CalculatorOutputs
- * @property {?HTMLElement} [$main]
- * @property {?HTMLElement} [$smallA]
- * @property {?HTMLElement} [$smallB]
+ * @typedef {Record<string, ?HTMLElement | undefined>} ElementList
  */
 /**
  * @callback CalcFunc
@@ -428,7 +416,7 @@ const $chartLoan = /** @type {HTMLCanvasElement} */ (document.getElementById('ch
 const $calculationType = /** @type {HTMLSelectElement} */ (document.getElementById('calc-type'));
 const $calculateBtn = /** @type {HTMLButtonElement} */ (document.getElementById('calculate-btn'));
 
-const calcInputs = /** @type {Record<number, CalculatorInputs>} */ ({
+const calcInputs = /** @type {Record<number, ElementList>} */ ({
     0: {
         $startingPrincipal: document.getElementById('starting-principal-0'),
         $annuityTerm: document.getElementById('annuity-term-0'),
@@ -459,7 +447,7 @@ const calcInputs = /** @type {Record<number, CalculatorInputs>} */ ({
     }
 });
 
-const calcOutputs = /** @type {Record<number, CalculatorOutputs>} */ ({
+const calcOutputs = /** @type {Record<number, ElementList>} */ ({
     0: {
         $main: document.getElementById('result-main-0'),
         $smallA: document.getElementById('result-small-A-0'),
