@@ -64,6 +64,17 @@ function currencyFormat(num, space = '&nbsp') {
     return `R${space}` + num.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')
 }
 
+/** 
+ * @param {number} interestRate
+ * @param {number} compound
+ * @returns {number}
+ */
+function getInterestPayRate(interestRate, compound) {
+    const cc = compound / 12;
+    const interest = interestRate / 100 / compound;
+    return Math.pow(1 + interest, cc) - 1;
+}
+
 /**
  * @param {number} principal
  * @param {?number} annuityTerm
@@ -80,10 +91,7 @@ function calculateResult(
     initialMonthlyIncome,
     annualIncrease,
 ) {
-    const cc = compound / 12;
-    const interest = interestRate / 100 / compound;
-    const ratePayB = Math.pow(1 + interest, cc) - 1;
-
+    const ratePayB = getInterestPayRate(interestRate, compound);
     const firstInterestPayment = principal * ratePayB;
     if (firstInterestPayment > initialMonthlyIncome) {
         input.error([], `This annuity earns more in interest than it pays out in withdrawals. It will continue on indefinitely. Please increase the monthly withdrawal to a number above ${currencyFormat(firstInterestPayment)}.`, true);
@@ -135,21 +143,22 @@ const RETRY_COUNT = 10;
 const DELTA_COUNT = 18;
 
 /**
- * 
- * @param {number} initialIncrement 
  * @param {(v: number) => number} resultGetter 
- * @returns 
+ * @param {number} initialIncrement 
+ * @param {number} [initialValue]
+ * @returns {number}
  */
 function findParameter(
+    resultGetter,
     initialIncrement,
-    resultGetter
+    initialValue = 0.1,
 ) {
     let delta = DELTA;
     for (let d = 0; d < DELTA_COUNT; d++) {
         let dm = 1 - delta;
         let dp = 1;
         for (let r = 0; r <= RETRY_COUNT; r++) {
-            let value = 0.1;
+            let value = initialValue;
             let increment = initialIncrement * Math.pow(2, r);
             for (let i = 0; i < 1000; i++) {
                 const ratio = resultGetter(value);
@@ -174,6 +183,31 @@ function findParameter(
     return 0;
 }
 
+/**
+ * @param {(v: number) => number} resultGetter 
+ * @param {number} initialIncrement 
+ * @param {number} initialValue 
+ * @returns {number}
+ */
+function findMoneyParameter(
+    resultGetter,
+    initialIncrement,
+    initialValue = 0.1,
+    doSmallCheck = true,
+) {
+    if (doSmallCheck) {
+        for (const v of [0.00, 0.01, 0.02]) {
+            if (resultGetter(v) <= 1) return v;
+        }
+    }
+
+    const foundV = roundTo(findParameter(resultGetter, initialIncrement, initialValue), 2);
+
+    const fv = resultGetter(foundV);
+    if (fv <= 1) return foundV;
+    return foundV + 0.01;
+}
+
 /** @type {CalcFunc} */
 function calculateMonthlyIncome(
     principal,
@@ -192,7 +226,43 @@ function calculateMonthlyIncome(
         input.error([], CRITICAL_ERROR_MESSAGE, true);
         throw new Error("Invalid state");
     }
-    alert("This calculation type has not been implemented yet");
+
+    const ratePayB = getInterestPayRate(interestRate, compound);
+    const firstInterestPayment = principal * ratePayB;
+    console.warn("FIP:", firstInterestPayment);
+
+    const income = findMoneyParameter((i) => {
+        const { actualTerm } = calculateResult(
+            principal,
+            annuityTerm,
+            interestRate,
+            compound,
+            i,
+            annualIncrease,
+        );
+        return actualTerm / annuityTerm;
+    }, 100, firstInterestPayment, false);
+
+    const { results } = calculateResult(
+        principal,
+        annuityTerm,
+        interestRate,
+        compound,
+        income,
+        annualIncrease,
+    );
+
+    console.error(results);
+
+    const totalWithdrawn = results[results.length - 1].totalWithdrawn;
+    const totalInterest = results[results.length - 1].totalInterest;
+    const endBalance = results[results.length - 1].endBalance;
+
+    return {
+        main: `Monthly Income: ${currencyFormat(income)}`,
+        smallA: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}, End Balance: ${currencyFormat(endBalance)}`,
+        smallB: `Total Interest: ${currencyFormat(totalInterest)}`,
+    }
 }
 
 /** @type {CalcFunc} */
@@ -273,7 +343,7 @@ function calculateInterestRate(
         throw new Error("Invalid state");
     }
 
-    const rate = findParameter(1, (/** @type {number} */ r) => {
+    const rate = findParameter((r) => {
         const { actualTerm } = calculateResult(
             principal,
             annuityTerm,
@@ -283,7 +353,7 @@ function calculateInterestRate(
             annualIncrease,
         );
         return annuityTerm / actualTerm;
-    });
+    }, 1, 0);
 
     const { results } = calculateResult(
         principal,
