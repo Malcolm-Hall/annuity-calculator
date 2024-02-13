@@ -5,9 +5,8 @@ console.log('Script is OK! ༼ つ ◕_◕ ༽つ');
 
 // Types
 /** @typedef {import('./lib/chartjs/chart.js').Chart} Chart */
-/**
- * @typedef {Record<string, ?HTMLElement | undefined>} ElementList
- */
+/** @typedef {Record<string, ?HTMLElement | undefined>} ElementList */
+/** @typedef {Record<string, number>[]} ResultList */
 /**
  * @callback CalcFunc
  * @param {?number} principal
@@ -16,7 +15,7 @@ console.log('Script is OK! ༼ つ ◕_◕ ༽つ');
  * @param {number} compound
  * @param {?number} monthlyIncome
  * @param {?number} annualIncrease
- * @returns {{ calculationResults: Record<string, number>[], outputResults: Record<string, string> }}
+ * @returns {{ calculationResults: ResultList, outputResults: Record<string, string>}}
  */
 
 const CRITICAL_ERROR_MESSAGE = "Please refresh the page and try again.";
@@ -77,6 +76,47 @@ function getInterestPayRate(interestRate, compound) {
 }
 
 /**
+ * @param {ResultList} monthlyResults 
+ * @returns {ResultList}
+ */
+function getAnnualResults(monthlyResults) {
+    let annualResults = [];
+
+    let totalInterest = 0;
+    let totalWithdrawn = 0;
+
+    let annualInterest = 0;
+    let annualWithdrawals = 0;
+    let annualStartBalance = undefined;
+
+    monthlyResults.forEach((item, index) => {
+        totalInterest += item.interestPayment;
+        totalWithdrawn += item.withdrawal;
+        annualInterest += item.interestPayment;
+        annualWithdrawals += item.withdrawal;
+        if (annualStartBalance === undefined) {
+            annualStartBalance = item.startBalance;
+        }
+
+        if ((index + 1) % 12 === 0 || (index + 1) === monthlyResults.length) {
+            annualResults.push({
+                startBalance: annualStartBalance,
+                endBalance: item.endBalance,
+                interestPayment: annualInterest,
+                withdrawal: annualWithdrawals,
+                totalInterest,
+                totalWithdrawn
+            });
+            annualInterest = 0;
+            annualWithdrawals = 0;
+            annualStartBalance = undefined;
+        }
+    });
+
+    return annualResults;
+}
+
+/**
  * @param {number} principal
  * @param {?number} annuityTerm
  * @param {number} interestRate
@@ -102,8 +142,6 @@ function calculateResult(
     const results = [];
     let balance = principal;
     let monthlyIncome = initialMonthlyIncome;
-    let totalWithdrawn = 0;
-    let totalInterest = 0;
 
     let i = 1;
     while (balance >= 0.01) {
@@ -111,18 +149,14 @@ function calculateResult(
 
         const withdrawal = Math.min(balance, monthlyIncome)
         balance -= withdrawal;
-        totalWithdrawn += withdrawal;
 
         const interestPayment = balance * ratePayB;
-        totalInterest += interestPayment;
         balance += interestPayment;
 
         results.push({
             startBalance,
             endBalance: balance,
             interestPayment,
-            totalWithdrawn,
-            totalInterest,
             withdrawal
         });
 
@@ -134,7 +168,7 @@ function calculateResult(
     }
 
     const actualTerm = results.length / 12;
-    console.warn(`Expect term of ${annuityTerm}, actual was ${actualTerm} (${i} months)`);
+    console.warn(`Expect term of ${annuityTerm}, actual was ${actualTerm} (${results.length} months)`);
 
     return { results, actualTerm };
 }
@@ -252,8 +286,8 @@ function calculateMonthlyIncome(
         annualIncrease,
     );
 
-    const totalWithdrawn = results[results.length - 1].totalWithdrawn;
-    const totalInterest = results[results.length - 1].totalInterest;
+    const totalWithdrawn = results.map(it => it.withdrawal).reduce((a, b) => a + b);
+    const totalInterest = results.map(it => it.interestPayment).reduce((a, b) => a + b);
     const endBalance = results[results.length - 1].endBalance;
 
     return {
@@ -293,8 +327,8 @@ function calculateAnnuityTerm(
         annualIncrease,
     );
 
-    const totalWithdrawn = results[results.length - 1].totalWithdrawn;
-    const totalInterest = results[results.length - 1].totalInterest;
+    const totalWithdrawn = results.map(it => it.withdrawal).reduce((a, b) => a + b);
+    const totalInterest = results.map(it => it.interestPayment).reduce((a, b) => a + b);
     const endBalance = results[results.length - 1].endBalance;
 
     return {
@@ -347,8 +381,8 @@ function calculateStartingPrincipal(
         annualIncrease,
     );
 
-    const totalWithdrawn = results[results.length - 1].totalWithdrawn;
-    const totalInterest = results[results.length - 1].totalInterest;
+    const totalWithdrawn = results.map(it => it.withdrawal).reduce((a, b) => a + b);
+    const totalInterest = results.map(it => it.interestPayment).reduce((a, b) => a + b);
     const endBalance = results[results.length - 1].endBalance;
 
     return {
@@ -401,8 +435,8 @@ function calculateInterestRate(
         annualIncrease,
     );
 
-    const totalWithdrawn = results[results.length - 1].totalWithdrawn;
-    const totalInterest = results[results.length - 1].totalInterest;
+    const totalWithdrawn = results.map(it => it.withdrawal).reduce((a, b) => a + b);
+    const totalInterest = results.map(it => it.interestPayment).reduce((a, b) => a + b);
     const endBalance = results[results.length - 1].endBalance;
 
     return {
@@ -548,7 +582,7 @@ const tooltip = {
     },
 };
 
-const pieChartData = [
+const secondaryChartData = [
     {
         data: [10, 60, 30],
         backgroundColor: [colors.primary, colors.primaryLight, colors.secondary],
@@ -557,37 +591,37 @@ const pieChartData = [
     },
 ];
 
-const barChartData = {
+const primaryChartData = {
     labels: [
         1
     ],
     datasets: [
         {
-            label: 'Placeholder 1',
+            label: 'Ending Balance',
             data: [
                 5000,
             ],
-            order: 1,
+            stack: "1",
             backgroundColor: colors.primary,
-            fill: true,
+            borderColor: colors.primary,
         },
         {
-            label: 'Placeholder 2',
+            label: 'Total Interest',
             data: [
                 6000,
             ],
-            order: 2,
+            stack: "2",
             backgroundColor: colors.primaryLight,
-            fill: true,
+            borderColor: colors.primaryLight,
         },
         {
-            label: 'Placeholder 3',
+            label: 'Total Withdrawn',
             data: [
                 681,
             ],
-            order: 3,
+            stack: "3",
             backgroundColor: colors.secondary,
-            fill: true,
+            borderColor: colors.secondary,
         }
     ],
 };
@@ -597,8 +631,8 @@ const $errorList = /** @type {HTMLElement} */ (document.getElementById('error-li
 const $annualResultsTable = /** @type {HTMLElement} */ (document.getElementById('annual-results'));
 const $monthlyResultsTable = /** @type {HTMLElement} */ (document.getElementById('monthly-results'));
 
-const $chartDonut = /** @type {HTMLCanvasElement} */ (document.getElementById('chart-donut'));
-const $chartLoan = /** @type {HTMLCanvasElement} */ (document.getElementById('chart-loan'));
+const $secondaryChart = /** @type {HTMLCanvasElement} */ (document.getElementById('secondary-chart'));
+const $primaryChart = /** @type {HTMLCanvasElement} */ (document.getElementById('primary-chart'));
 const $calculationType = /** @type {HTMLSelectElement} */ (document.getElementById('calc-type'));
 const $calculateBtn = /** @type {HTMLButtonElement} */ (document.getElementById('calculate-btn'));
 
@@ -853,45 +887,8 @@ const input = {
     }
 }
 
-/** @param {Record<string, number>[]} results */
-const displayResultsTable = (results) => {
-    let annualResults = [];
-    let annualInterest = 0;
-    let annualWithdrawals = 0;
-    let annualStartBalance = undefined;
-
-    let monthlyResultsHtml = '';
-    results.forEach((item, index) => {
-        monthlyResultsHtml += `<tr>
-            <td class="text-center">${index + 1}</td>
-            <td>${currencyFormat(item.startBalance)}</td>
-            <td>${currencyFormat(item.withdrawal)}</td>
-            <td>${currencyFormat(item.interestPayment)}</td>
-            <td>${currencyFormat(item.endBalance)}</td>
-        </tr>`;
-
-        annualInterest += item.interestPayment;
-        annualWithdrawals += item.withdrawal;
-        if (annualStartBalance === undefined) {
-            annualStartBalance = item.startBalance;
-        }
-
-        if ((index + 1) % 12 === 0 || (index + 1) === results.length) {
-            const year = Math.ceil((index + 1) / 12);
-            const title = `Year #${year} End`;
-            monthlyResultsHtml += `<th class="white text-center" colspan="5">${title}</th>`;
-            annualResults.push({
-                startBalance: annualStartBalance,
-                endBalance: item.endBalance,
-                interestPayment: annualInterest,
-                withdrawal: annualWithdrawals
-            });
-            annualInterest = 0;
-            annualWithdrawals = 0;
-            annualStartBalance = undefined;
-        }
-    });
-
+/** @param {ResultList} annualResults */
+const displayAnnualResultsTable = (annualResults) => {
     let annualResultsHtml = '';
     annualResults.forEach((r, index) => {
         annualResultsHtml += `<tr>
@@ -904,10 +901,43 @@ const displayResultsTable = (results) => {
     });
 
     $annualResultsTable.innerHTML = annualResultsHtml;
+}
+
+/** @param {ResultList} monthlyResults */
+const displayMonthlyResultsTable = (monthlyResults) => {
+    let monthlyResultsHtml = '';
+    monthlyResults.forEach((item, index) => {
+        monthlyResultsHtml += `<tr>
+            <td class="text-center">${index + 1}</td>
+            <td>${currencyFormat(item.startBalance)}</td>
+            <td>${currencyFormat(item.withdrawal)}</td>
+            <td>${currencyFormat(item.interestPayment)}</td>
+            <td>${currencyFormat(item.endBalance)}</td>
+        </tr>`;
+
+        if ((index + 1) % 12 === 0 || (index + 1) === monthlyResults.length) {
+            const year = Math.ceil((index + 1) / 12);
+            const title = `Year #${year} End`;
+            monthlyResultsHtml += `<th class="white text-center" colspan="5">${title}</th>`;
+        }
+    });
+
     $monthlyResultsTable.innerHTML = monthlyResultsHtml;
 }
 
-const calculateAnnuity = () => {
+/**
+ * @param {ResultList} annualResults
+ * @param {Chart} barChart
+ */
+const displayPrimaryResultsChart = (annualResults, barChart) => {
+    barChart.data.labels = annualResults.map((_, idx) => idx + 1);
+    barChart.data.datasets[0].data = annualResults.map(it => it.endBalance);
+    barChart.data.datasets[1].data = annualResults.map(it => it.totalInterest);
+    barChart.data.datasets[2].data = annualResults.map(it => it.totalWithdrawn);
+    barChart.update()
+}
+
+const calculateInputs = () => {
     const calcTypeIndex = $calculationType.selectedIndex;
     const calcFunc = getCalcFuncFromIndex(calcTypeIndex);
     const {
@@ -929,7 +959,7 @@ const calculateAnnuity = () => {
 
     const compound = getCompoundFromIndex(compoundIdx);
 
-    if (!input.valid()) return;
+    if (!input.valid()) throw new Error("Invalid State");
 
     console.warn("Calculate called: ", principal, annuityTerm, interestRate, compound, monthlyIncome, annualIncrease);
 
@@ -959,16 +989,20 @@ const calculateAnnuity = () => {
     $smallA && ($smallA.innerHTML = smallA);
     $smallB && ($smallB.innerHTML = smallB);
 
-    displayResultsTable(calculationResults);
+    return calculationResults;
 }
 
 /**
- * @param {Chart} pieChart 
- * @param {Chart} barChart 
+ * @param {Chart} primaryChart 
+ * @param {Chart} secondaryChart 
  */
-const runApp = (pieChart, barChart) => {
-    $calculationType.addEventListener('change', calculateAnnuity);
-    $calculateBtn.addEventListener('click', calculateAnnuity);
+const runApp = (primaryChart, secondaryChart) => {
+    const monthlyResults = calculateInputs();
+    const annualResults = getAnnualResults(monthlyResults);
+
+    displayMonthlyResultsTable(monthlyResults);
+    displayAnnualResultsTable(annualResults);
+    displayPrimaryResultsChart(annualResults, primaryChart);
 }
 
 $calculationType.addEventListener('change', toggleRelatedInputs);
@@ -992,10 +1026,10 @@ Object.values(calcInputs).forEach(({
 import("./lib/chartjs/chart.js").then(({ Chart, registerables }) => {
     Chart.register(...registerables);
 
-    const pieChart = new Chart($chartDonut, {
+    const secondaryChart = new Chart($secondaryChart, {
         type: 'pie',
         data: {
-            datasets: pieChartData,
+            datasets: secondaryChartData,
         },
         options: {
             rotation: 0,
@@ -1016,11 +1050,12 @@ import("./lib/chartjs/chart.js").then(({ Chart, registerables }) => {
         plugins: [customDataLabels],
     });
 
-    const barChart = new Chart($chartLoan, {
-        type: 'bar',
-        data: barChartData,
+    const primaryChart = new Chart($primaryChart, {
+        type: 'line',
+        data: primaryChartData,
         options: {
             response: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     display: false,
@@ -1053,5 +1088,6 @@ import("./lib/chartjs/chart.js").then(({ Chart, registerables }) => {
         }
     });
 
-    runApp(pieChart, barChart);
+    $calculationType.addEventListener('change', () => runApp(primaryChart, secondaryChart));
+    $calculateBtn.addEventListener('click', () => runApp(primaryChart, secondaryChart));
 })
