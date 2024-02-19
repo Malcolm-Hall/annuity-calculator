@@ -143,15 +143,19 @@ function calculateResult(
     let balance = principal;
     let monthlyIncome = initialMonthlyIncome;
 
-    let i = 1;
+    let i = 0;
     while (balance >= 0.01) {
-        const startBalance = balance;
+        if (i > 0 && i % 12 === 0) {
+            monthlyIncome *= 1 + annualIncrease / 100;
+        }
 
-        const withdrawal = Math.min(balance, monthlyIncome)
-        balance -= withdrawal;
+        const startBalance = balance;
 
         const interestPayment = balance * ratePayB;
         balance += interestPayment;
+
+        const withdrawal = Math.min(balance, monthlyIncome)
+        balance -= withdrawal;
 
         results.push({
             startBalance,
@@ -160,17 +164,13 @@ function calculateResult(
             withdrawal
         });
 
-        if (i % 12 === 0) {
-            monthlyIncome *= 1 + annualIncrease / 100;
-        }
-
         i++;
     }
 
-    const actualTerm = results.length / 12;
-    console.warn(`Expect term of ${annuityTerm}, actual was ${actualTerm} (${results.length} months)`);
+    const actualAnnuityTerm = results.length / 12;
+    console.warn(`Expect term of ${annuityTerm}, actual was ${actualAnnuityTerm} (${results.length} months)`);
 
-    return { results, actualTerm };
+    return { results, actualAnnuityTerm, finalMonthlyIncome: monthlyIncome };
 }
 
 const DELTA = 0.0000000001;
@@ -249,7 +249,7 @@ function calculateMonthlyIncome(
     annuityTerm,
     interestRate,
     compound,
-    monthlyIncome,
+    _monthlyIncome,
     annualIncrease,
 ) {
     if (
@@ -266,7 +266,7 @@ function calculateMonthlyIncome(
     const firstInterestPayment = principal * ratePayB;
 
     const income = findMoneyParameter((i) => {
-        const { actualTerm } = calculateResult(
+        const { actualAnnuityTerm } = calculateResult(
             principal,
             annuityTerm,
             interestRate,
@@ -274,7 +274,7 @@ function calculateMonthlyIncome(
             i,
             annualIncrease,
         );
-        return actualTerm / annuityTerm;
+        return actualAnnuityTerm / annuityTerm;
     }, 100, firstInterestPayment, false);
 
     const { results } = calculateResult(
@@ -318,7 +318,7 @@ function calculateAnnuityTerm(
         input.error([], CRITICAL_ERROR_MESSAGE, true);
         throw new Error("Invalid state");
     }
-    const { results, actualTerm } = calculateResult(
+    const { results, actualAnnuityTerm } = calculateResult(
         principal,
         annuityTerm,
         interestRate,
@@ -334,7 +334,7 @@ function calculateAnnuityTerm(
     return {
         calculationResults: results,
         outputResults: {
-            main: `Annuity Term: ${actualTerm.toFixed(1)} years`,
+            main: `Annuity Term: ${actualAnnuityTerm.toFixed(1)} years`,
             smallA: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}, End Balance: ${currencyFormat(endBalance)}`,
             smallB: `Total Interest: ${currencyFormat(totalInterest)}`,
         }
@@ -361,7 +361,7 @@ function calculateStartingPrincipal(
     }
 
     const principalRequired = findMoneyParameter((p) => {
-        const { actualTerm } = calculateResult(
+        const { actualAnnuityTerm } = calculateResult(
             p,
             annuityTerm,
             interestRate,
@@ -369,7 +369,7 @@ function calculateStartingPrincipal(
             monthlyIncome,
             annualIncrease,
         );
-        return annuityTerm / actualTerm;
+        return annuityTerm / actualAnnuityTerm;
     }, monthlyIncome, monthlyIncome);
 
     const { results } = calculateResult(
@@ -415,7 +415,7 @@ function calculateInterestRate(
     }
 
     const rate = findParameter((r) => {
-        const { actualTerm } = calculateResult(
+        const { actualAnnuityTerm } = calculateResult(
             principal,
             annuityTerm,
             r,
@@ -423,7 +423,7 @@ function calculateInterestRate(
             monthlyIncome,
             annualIncrease,
         );
-        return annuityTerm / actualTerm;
+        return annuityTerm / actualAnnuityTerm;
     }, 1, 0);
 
     const { results } = calculateResult(
