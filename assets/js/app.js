@@ -1004,14 +1004,15 @@ const displayMonthlyResultsTable = (monthlyResults) => {
 
 /**
  * @param {ResultList} annualResults
- * @param {Chart} barChart
+ * @param {Chart} primaryChart
  */
-const displayPrimaryResultsChart = (annualResults, barChart) => {
-    barChart.data.labels = annualResults.map((_, idx) => idx + 1);
-    barChart.data.datasets[0].data = annualResults.map(it => it.endBalance);
-    barChart.data.datasets[1].data = annualResults.map(it => it.totalInterest);
-    barChart.data.datasets[2].data = annualResults.map(it => it.totalWithdrawn);
-    barChart.update()
+const displayPrimaryResultsChart = (annualResults, primaryChart) => {
+    primaryChart.data.labels = annualResults.map((_, idx) => idx + 1);
+    primaryChart.data.datasets[0].data = annualResults.map(it => it.endBalance);
+    primaryChart.data.datasets[1].data = annualResults.map(it => it.totalInterest);
+    primaryChart.data.datasets[2].data = annualResults.map(it => it.totalWithdrawn);
+    primaryChart.reset();
+    primaryChart.update();
 }
 
 const calculateInputs = () => {
