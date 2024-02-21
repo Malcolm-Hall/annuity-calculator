@@ -358,13 +358,12 @@ function calculateMonthlyIncome(
 
     const totalWithdrawn = results.map(it => it.withdrawal).reduce((a, b) => a + b);
     const totalInterest = results.map(it => it.interestPayment).reduce((a, b) => a + b);
-    const endBalance = results[results.length - 1].endBalance;
 
     return {
         calculationResults: results,
         outputResults: {
             main: `Monthly Income: ${currencyFormat(income)}`,
-            smallA: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}, End Balance: ${currencyFormat(endBalance)}`,
+            smallA: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}`,
             smallB: `Total Interest: ${currencyFormat(totalInterest)}`,
         }
     }
@@ -400,13 +399,12 @@ function calculateAnnuityTerm(
 
     const totalWithdrawn = results.map(it => it.withdrawal).reduce((a, b) => a + b);
     const totalInterest = results.map(it => it.interestPayment).reduce((a, b) => a + b);
-    const endBalance = results[results.length - 1].endBalance;
 
     return {
         calculationResults: results,
         outputResults: {
             main: `Annuity Term: ${actualAnnuityTerm.toFixed(1)} years`,
-            smallA: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}, End Balance: ${currencyFormat(endBalance)}`,
+            smallA: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}`,
             smallB: `Total Interest: ${currencyFormat(totalInterest)}`,
         }
     }
@@ -458,13 +456,12 @@ function calculateStartingPrincipal(
 
     const totalWithdrawn = results.map(it => it.withdrawal).reduce((a, b) => a + b);
     const totalInterest = results.map(it => it.interestPayment).reduce((a, b) => a + b);
-    const endBalance = results[results.length - 1].endBalance;
 
     return {
         calculationResults: results,
         outputResults: {
             main: `Principal: ${currencyFormat(principal)}`,
-            smallA: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}, End Balance: ${currencyFormat(endBalance)}`,
+            smallA: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}`,
             smallB: `Total Interest: ${currencyFormat(totalInterest)}`,
         }
     }
@@ -518,13 +515,12 @@ function calculateInterestRate(
 
     const totalWithdrawn = results.map(it => it.withdrawal).reduce((a, b) => a + b);
     const totalInterest = results.map(it => it.interestPayment).reduce((a, b) => a + b);
-    const endBalance = results[results.length - 1].endBalance;
 
     return {
         calculationResults: results,
         outputResults: {
             main: `Interest Rate: ${interestRate}% `,
-            smallA: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}, End Balance: ${currencyFormat(endBalance)}`,
+            smallA: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}`,
             smallB: `Total Interest: ${currencyFormat(totalInterest)}`,
         }
     }
@@ -975,8 +971,8 @@ const displayAnnualResultsTable = (annualResults) => {
         annualResultsHtml += `<tr>
             <td class="text-center">${index + 1}</td>
             <td>${currencyFormat(r.startBalance)}</td>
-            <td>${currencyFormat(r.withdrawal)}</td>
             <td>${currencyFormat(r.interestPayment)}</td>
+            <td>${currencyFormat(r.withdrawal)}</td>
             <td>${currencyFormat(r.endBalance)}</td>
         </tr>`;
     });
@@ -991,8 +987,8 @@ const displayMonthlyResultsTable = (monthlyResults) => {
         monthlyResultsHtml += `<tr>
             <td class="text-center">${index + 1}</td>
             <td>${currencyFormat(item.startBalance)}</td>
-            <td>${currencyFormat(item.withdrawal)}</td>
             <td>${currencyFormat(item.interestPayment)}</td>
+            <td>${currencyFormat(item.withdrawal)}</td>
             <td>${currencyFormat(item.endBalance)}</td>
         </tr>`;
 
@@ -1074,10 +1070,9 @@ const calculateInputs = () => {
 }
 
 /**
- * @param {Chart} primaryChart 
- * @param {Chart} secondaryChart 
+ * @param {Chart} primaryChart
  */
-const runApp = (primaryChart, secondaryChart) => {
+const runApp = (primaryChart) => {
     const monthlyResults = calculateInputs();
     const annualResults = getAnnualResults(monthlyResults);
 
@@ -1106,30 +1101,6 @@ Object.values(calcInputs).forEach(({
 
 import("./lib/chartjs/chart.js").then(({ Chart, registerables }) => {
     Chart.register(...registerables);
-
-    const secondaryChart = new Chart($secondaryChart, {
-        type: 'pie',
-        data: {
-            datasets: secondaryChartData,
-        },
-        options: {
-            rotation: 0,
-            hover: { mode: null },
-            responsive: false,
-            layout: {
-                padding: 30,
-            },
-            plugins: {
-                tooltip: {
-                    enabled: false,
-                },
-                legend: {
-                    display: false,
-                },
-            },
-        },
-        plugins: [customDataLabels],
-    });
 
     const primaryChart = new Chart($primaryChart, {
         type: 'line',
@@ -1169,6 +1140,6 @@ import("./lib/chartjs/chart.js").then(({ Chart, registerables }) => {
         }
     });
 
-    $calculationType.addEventListener('change', () => runApp(primaryChart, secondaryChart));
-    $calculateBtn.addEventListener('click', () => runApp(primaryChart, secondaryChart));
+    $calculationType.addEventListener('change', () => runApp(primaryChart));
+    $calculateBtn.addEventListener('click', () => runApp(primaryChart));
 })
