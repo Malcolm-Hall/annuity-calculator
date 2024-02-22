@@ -362,7 +362,7 @@ function calculateMonthlyIncome(
     return {
         calculationResults: results,
         outputResults: {
-            main: `Monthly Income: ${currencyFormat(income)}`,
+            main: `Monthly Income: ${currencyFormat(income)} <br /> Increasing at ${annualIncrease}% per annum`,
             smallA: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}`,
             smallB: `Total Interest: ${currencyFormat(totalInterest)}`,
         }
@@ -968,12 +968,14 @@ const input = {
 const displayAnnualResultsTable = (annualResults) => {
     let annualResultsHtml = '';
     annualResults.forEach((r, index) => {
+        const drawDownPercentage = 100 * r.withdrawal / (r.startBalance + r.interestPayment);
         annualResultsHtml += `<tr>
             <td class="text-center">${index + 1}</td>
             <td>${currencyFormat(r.startBalance)}</td>
             <td>${currencyFormat(r.interestPayment)}</td>
             <td>${currencyFormat(r.withdrawal)}</td>
             <td>${currencyFormat(r.endBalance)}</td>
+            <td>${Math.round(drawDownPercentage)}%</td>
         </tr>`;
     });
 
@@ -984,18 +986,20 @@ const displayAnnualResultsTable = (annualResults) => {
 const displayMonthlyResultsTable = (monthlyResults) => {
     let monthlyResultsHtml = '';
     monthlyResults.forEach((item, index) => {
+        const drawDownPercentage = 100 * item.withdrawal / (item.startBalance + item.interestPayment);
         monthlyResultsHtml += `<tr>
             <td class="text-center">${index + 1}</td>
             <td>${currencyFormat(item.startBalance)}</td>
             <td>${currencyFormat(item.interestPayment)}</td>
             <td>${currencyFormat(item.withdrawal)}</td>
             <td>${currencyFormat(item.endBalance)}</td>
+            <td>${Math.round(drawDownPercentage)}%</td>
         </tr>`;
 
         if ((index + 1) % 12 === 0 || (index + 1) === monthlyResults.length) {
             const year = Math.ceil((index + 1) / 12);
             const title = `Year #${year} End`;
-            monthlyResultsHtml += `<th class="white text-center" colspan="5">${title}</th>`;
+            monthlyResultsHtml += `<th class="white text-center" colspan="6">${title}</th>`;
         }
     });
 
