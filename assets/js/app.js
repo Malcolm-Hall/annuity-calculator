@@ -358,13 +358,16 @@ function calculateMonthlyIncome(
 
     const totalWithdrawn = results.map(it => it.withdrawal).reduce((a, b) => a + b);
     const totalInterest = results.map(it => it.interestPayment).reduce((a, b) => a + b);
+    const initialAnnualIncome = income * Math.min(12, results.length);
+    const drawDown = initialAnnualIncome / Math.max(principal, initialAnnualIncome) * 100;
 
     return {
         calculationResults: results,
         outputResults: {
             main: `Monthly Income: ${currencyFormat(income)} <br /> Increasing at ${annualIncrease}% per annum`,
-            smallA: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}`,
-            smallB: `Total Interest: ${currencyFormat(totalInterest)}`,
+            smallA: `Initial Annual Income: ${currencyFormat(initialAnnualIncome)} <br /> Draw Down Percentage: ${drawDown.toFixed(1)}%`,
+            smallB: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}`,
+            smallC: `Total Interest: ${currencyFormat(totalInterest)}`,
         }
     }
 }
@@ -399,13 +402,16 @@ function calculateAnnuityTerm(
 
     const totalWithdrawn = results.map(it => it.withdrawal).reduce((a, b) => a + b);
     const totalInterest = results.map(it => it.interestPayment).reduce((a, b) => a + b);
+    const initialAnnualIncome = monthlyIncome * Math.min(12, results.length);
+    const drawDown = initialAnnualIncome / Math.max(principal, initialAnnualIncome) * 100;
 
     return {
         calculationResults: results,
         outputResults: {
             main: `Annuity Term: ${actualAnnuityTerm.toFixed(1)} years`,
-            smallA: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}`,
-            smallB: `Total Interest: ${currencyFormat(totalInterest)}`,
+            smallA: `Initial Annual Income: ${currencyFormat(initialAnnualIncome)} <br /> Draw Down Percentage: ${drawDown.toFixed(1)}%`,
+            smallB: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}`,
+            smallC: `Total Interest: ${currencyFormat(totalInterest)}`,
         }
     }
 }
@@ -456,13 +462,16 @@ function calculateStartingPrincipal(
 
     const totalWithdrawn = results.map(it => it.withdrawal).reduce((a, b) => a + b);
     const totalInterest = results.map(it => it.interestPayment).reduce((a, b) => a + b);
+    const initialAnnualIncome = monthlyIncome * Math.min(12, results.length);
+    const drawDown = initialAnnualIncome / Math.max(principal, initialAnnualIncome) * 100;
 
     return {
         calculationResults: results,
         outputResults: {
             main: `Principal: ${currencyFormat(principal)}`,
-            smallA: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}`,
-            smallB: `Total Interest: ${currencyFormat(totalInterest)}`,
+            smallA: `Initial Annual Income: ${currencyFormat(initialAnnualIncome)} <br /> Draw Down Percentage: ${drawDown.toFixed(1)}%`,
+            smallB: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}`,
+            smallC: `Total Interest: ${currencyFormat(totalInterest)}`,
         }
     }
 }
@@ -515,13 +524,16 @@ function calculateInterestRate(
 
     const totalWithdrawn = results.map(it => it.withdrawal).reduce((a, b) => a + b);
     const totalInterest = results.map(it => it.interestPayment).reduce((a, b) => a + b);
+    const initialAnnualIncome = monthlyIncome * Math.min(12, results.length);
+    const drawDown = initialAnnualIncome / Math.max(principal, initialAnnualIncome) * 100;
 
     return {
         calculationResults: results,
         outputResults: {
             main: `Interest Rate: ${interestRate}% `,
-            smallA: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}`,
-            smallB: `Total Interest: ${currencyFormat(totalInterest)}`,
+            smallA: `Initial Annual Income: ${currencyFormat(initialAnnualIncome)} <br /> Draw Down Percentage: ${drawDown.toFixed(1)}%`,
+            smallB: `Total Withdrawn: ${currencyFormat(totalWithdrawn)}`,
+            smallC: `Total Interest: ${currencyFormat(totalInterest)}`,
         }
     }
 }
@@ -749,21 +761,25 @@ const calcOutputs = /** @type {Record<number, ElementList>} */ ({
         $main: document.getElementById('result-main-0'),
         $smallA: document.getElementById('result-small-A-0'),
         $smallB: document.getElementById('result-small-B-0'),
+        $smallC: document.getElementById('result-small-C-0'),
     },
     1: {
         $main: document.getElementById('result-main-1'),
         $smallA: document.getElementById('result-small-A-1'),
         $smallB: document.getElementById('result-small-B-1'),
+        $smallC: document.getElementById('result-small-C-1'),
     },
     2: {
         $main: document.getElementById('result-main-2'),
         $smallA: document.getElementById('result-small-A-2'),
         $smallB: document.getElementById('result-small-B-2'),
+        $smallC: document.getElementById('result-small-C-2'),
     },
     3: {
         $main: document.getElementById('result-main-3'),
         $smallA: document.getElementById('result-small-A-3'),
         $smallB: document.getElementById('result-small-B-3'),
+        $smallC: document.getElementById('result-small-C-3'),
     },
 })
 
@@ -968,14 +984,12 @@ const input = {
 const displayAnnualResultsTable = (annualResults) => {
     let annualResultsHtml = '';
     annualResults.forEach((r, index) => {
-        const drawDownPercentage = 100 * r.withdrawal / (r.startBalance + r.interestPayment);
         annualResultsHtml += `<tr>
             <td class="text-center">${index + 1}</td>
             <td>${currencyFormat(r.startBalance)}</td>
             <td>${currencyFormat(r.interestPayment)}</td>
             <td>${currencyFormat(r.withdrawal)}</td>
             <td>${currencyFormat(r.endBalance)}</td>
-            <td>${Math.round(drawDownPercentage)}%</td>
         </tr>`;
     });
 
@@ -986,14 +1000,12 @@ const displayAnnualResultsTable = (annualResults) => {
 const displayMonthlyResultsTable = (monthlyResults) => {
     let monthlyResultsHtml = '';
     monthlyResults.forEach((item, index) => {
-        const drawDownPercentage = 100 * item.withdrawal / (item.startBalance + item.interestPayment);
         monthlyResultsHtml += `<tr>
             <td class="text-center">${index + 1}</td>
             <td>${currencyFormat(item.startBalance)}</td>
             <td>${currencyFormat(item.interestPayment)}</td>
             <td>${currencyFormat(item.withdrawal)}</td>
             <td>${currencyFormat(item.endBalance)}</td>
-            <td>${Math.round(drawDownPercentage)}%</td>
         </tr>`;
 
         if ((index + 1) % 12 === 0 || (index + 1) === monthlyResults.length) {
@@ -1049,7 +1061,8 @@ const calculateInputs = () => {
         outputResults: {
             main,
             smallA,
-            smallB
+            smallB,
+            smallC
         },
         calculationResults
     } = calcFunc(
@@ -1064,12 +1077,14 @@ const calculateInputs = () => {
     const {
         $main,
         $smallA,
-        $smallB
+        $smallB,
+        $smallC
     } = calcOutputs[calcTypeIndex];
 
     $main && ($main.innerHTML = main);
     $smallA && ($smallA.innerHTML = smallA);
     $smallB && ($smallB.innerHTML = smallB);
+    $smallC && ($smallC.innerHTML = smallC)
 
     return calculationResults;
 }
