@@ -7,13 +7,13 @@ This is a free annuity calculator.
 
 ## Installation
 
-1. [Download](https://github.com/ashen-coder/annuity-calculator) the ZIP file of this repository.
+1. [Download](https://github.com/malcolm-hall/annuity-calculator) the ZIP file of this repository.
 2. [Install](https://wordpress.com/support/plugins/install-a-plugin/#install-a-plugin-with-a-zip-file) the plugin into WordPress.
-3. Activate the [Annuity Calculator](https://ashen-coder.github.io/annuity-calculator/ "Annuity Calculator Homepage") plugin through the "Plugins" menu in WordPress.
+3. Activate the [Annuity Calculator](https://malcolm-hall.github.io/annuity-calculator/ "Annuity Calculator Homepage") plugin through the "Plugins" menu in WordPress.
 
 ## Usage
 
-* Add the shortcode `[ac_annuity_calculator]` to your page, post or sidebar
+- Add the shortcode `[ac_annuity_calculator]` to your page, post or sidebar
 
 ## Calculation Types
 

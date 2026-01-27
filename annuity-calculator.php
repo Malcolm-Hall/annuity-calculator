@@ -1,13 +1,13 @@
 <?php
 /*
 Plugin Name: Annuity Calculator
-Plugin URI: https://ashen-coder.github.io/annuity-calculator/
+Plugin URI: https://malcolm-hall.github.io/annuity-calculator/
 Description: Annuity calculator 
 Version: 1.0.1
-Author: Ashen Coder
-Author URI: https://github.com/ashen-coder
+Author: Malcolm Hall
+Author URI: https://github.com/malcolm-hall
 License: GPLv2 or later
-Update URI: https://github.com/ashen-coder/annuity-calculator
+Update URI: https://github.com/malcolm-hall/annuity-calculator
 */
 
 if (!defined('ABSPATH')) exit;

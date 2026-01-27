@@ -1,5 +1,5 @@
 === Annuity calculator ===
-Contributors: ashen-coder
+Contributors: malcolm-hall
 Tags: annuity calculator, calculate investment, investment planning, investment strategy, compound interest calculator, investment income, investment portfolio
 Requires at least: 5.0
 Tested up to: 6.4.0
@@ -9,7 +9,7 @@ License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 This is a free annuity calculator.
 
-[https://ashen-coder.github.io/annuity-calculator/](https://ashen-coder.github.io/annuity-calculator/)
+[https://malcolm-hall.github.io/annuity-calculator/](https://malcolm-hall.github.io/annuity-calculator/)
 
 == Usage ==
 
@@ -24,9 +24,9 @@ Add the Annuity Calculator shortcode to your page, post or sidebar:
 
 == Installation ==
 
-1. [Download](https://github.com/ashen-coder/annuity-calculator) the ZIP file of this repository.
+1. [Download](https://github.com/malcolm-hall/annuity-calculator) the ZIP file of this repository.
 2. [Install](https://wordpress.com/support/plugins/install-a-plugin/#install-a-plugin-with-a-zip-file) the plugin into WordPress.
-3. Activate the [Annuity Calculator](https://ashen-coder.github.io/annuity-calculator/ "Annuity Calculator Homepage") plugin through the "Plugins" menu in WordPress.
+3. Activate the [Annuity Calculator](https://malcolm-hall.github.io/annuity-calculator/ "Annuity Calculator Homepage") plugin through the "Plugins" menu in WordPress.
 
 == Usage ==
 
