@@ -1,6 +1,8 @@
 # Annuity Calculator Widget for WordPress
 
-This is a free annuity calculator.
+This is a free annuity calculator widget that can be embedded in wordpress sites.
+
+View the live site at https://malcolm-hall.github.io/annuity-calculator
 
 ![Annuity Calculator Input Form](/assets/images/input-form.png "Annuity Calculator Input Form")
 ![Annuity Calculator Calculation Results](/assets/images/output-results.png "Annuity Calculator Calculation Results")
